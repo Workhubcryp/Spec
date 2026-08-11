@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.current_path or "Root" }} · File Browser{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">DIRECTORY EXPLORER</p>
+    <h1>{{ listing.current_path or "Root directory" }}</h1>
+    <p class="muted">指定された共有ディレクトリを安全に閲覧しています。</p>
+  </div>
+  <div class="heading-meta">{{ listing.entries|length }} items</div>
+</section>
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="{{ url_for('files.browse', virtual_path='') }}">BASE_DIR</a>
+  {% if listing.current_path %}
+    {% set accumulated = namespace(value='') %}
+    {% for segment in listing.current_path.split('/') %}
+      {% set accumulated.value = accumulated.value + ('/' if accumulated.value else '') + segment %}
+      <span aria-hidden="true">/</span>
+      <a href="{{ url_for('files.browse', virtual_path=accumulated.value) }}">{{ segment }}</a>
+    {% endfor %}
+  {% endif %}
+</nav>
+
+<div class="toolbar">
+  {% if listing.parent_path is not none %}
+    <a class="button button-secondary" href="{{ url_for('files.browse', virtual_path=listing.parent_path) }}">← Parent directory</a>
+  {% else %}
+    <span class="button button-disabled">Root directory</span>
+  {% endif %}
+  <form class="sort-form" method="get">
+    <label for="sort">Sort</label>
+    <select id="sort" name="sort" onchange="this.form.submit()">
+      <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
+      <option value="type" {% if sort == 'type' %}selected{% endif %}>Type</option>
+      <option value="size" {% if sort == 'size' %}selected{% endif %}>Size</option>
+      <option value="modified" {% if sort == 'modified' %}selected{% endif %}>Modified</option>
+    </select>
+    <input type="hidden" name="order" value="{{ 'desc' if order == 'asc' else 'asc' }}">
+    <button class="button button-secondary" type="submit">{{ "↑" if order == "asc" else "↓" }}</button>
+  </form>
+</div>
+
+<div class="file-table-wrap">
+  <table class="file-table">
+    <thead>
+      <tr><th>Name</th><th>Type</th><th>Size</th><th>Modified</th><th class="actions-col"><span class="sr-only">Actions</span></th></tr>
+    </thead>
+    <tbody>
+    {% if listing.entries %}
+      {% for entry in listing.entries %}
+      <tr>
+        <td class="name-cell">
+          {% if entry.is_directory %}
+            <span class="file-icon folder-icon" aria-hidden="true">↳</span>
+            <a href="{{ url_for('files.browse', virtual_path=entry.relative_path) }}">{{ entry.name }}/</a>
+          {% else %}
+            <span class="file-icon" aria-hidden="true">·</span>
+            {% if entry.previewable %}
+              <a href="{{ url_for('preview.preview', virtual_path=entry.relative_path) }}">{{ entry.name }}</a>
+            {% else %}
+              <span>{{ entry.name }}</span>
+            {% endif %}
+            {% if entry.is_symlink %}<span class="tag">link</span>{% endif %}
+          {% endif %}
+        </td>
+        <td class="muted">{{ "Folder" if entry.is_directory else (entry.mime_type or "File") }}</td>
+        <td class="muted">{{ "—" if entry.size_bytes is none else entry.size_bytes|filesizeformat }}</td>
+        <td class="muted">{{ entry.modified_at.strftime("%Y-%m-%d %H:%M UTC") if entry.modified_at else "—" }}</td>
+        <td class="actions-col">
+          {% if not entry.is_directory %}
+            <a class="download-link" href="{{ url_for('files.download', virtual_path=entry.relative_path) }}">Download</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="5" class="empty-state">このフォルダには表示できる項目がありません。</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+<p class="footnote">Files are read directly from the configured BASE_DIR. Write operations are disabled.</p>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ status_code }} · File Browser{% endblock %}
+{% block content %}
+<section class="error-card">
+  <p class="error-code">{{ status_code }}</p>
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="button button-primary" href="{{ url_for('files.browse', virtual_path='') }}">Back to root</a>
+</section>
+{% endblock %}

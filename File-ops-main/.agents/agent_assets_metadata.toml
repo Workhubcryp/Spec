@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "e6mJ2Zo3a39AgJZQSrqbc"
+uri = "file://docs/ARCHITECTURE.md"
+type = "text"
+title = "File Management System Architecture"
+description = "LAN内File BrowserのMVPと将来拡張を整理したアーキテクチャ設計書です。"

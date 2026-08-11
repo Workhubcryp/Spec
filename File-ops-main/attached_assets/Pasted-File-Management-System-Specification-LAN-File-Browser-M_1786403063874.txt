@@ -1,0 +1,1254 @@
+File Management System
+
+# Specification
+
+「LAN内で指定ディレクトリをブラウズするFile Browser」をMVP（Minimum Viable Product）として設計
+
+## File Browser
+
+1. システム概要
+
+	システム名：
+
+	File operat system
+
+目的：
+
+PythonでHTTP Serverを起動し、指定したディレクトリ配下のファイル・フォルダをWebブラウザから閲覧できるようにする。
+
+ドメインは使用せず、LAN内のIPアドレスとポート番号でアクセスする。
+'''
+Web Browser
+     │
+     │ HTTP
+     ▼
+Python / Flask
+     │
+     ▼
+File Browser
+     │
+     ▼
+指定ディレクトリ
+(BASE_DIR)
+'''
+アクセス例：
+
+http://192.168.0.10:8000/
+
+⸻
+
+2. 対象環境
+
+* Linux Server
+* Python 3.x
+* Flask
+* HTML / CSS
+* LAN環境
+* Windowsでも動作できる構成を考慮
+
+⸻
+
+3. 基本仕様
+
+3.1 Server
+
+Python から Flask Server を起動
+
+Host: 0.0.0.0
+Port: 8000
+Protocol: HTTP
+
+設定は config.py で管理
+
+例：
+'''
+BASE_DIR = "/works/data/spec"
+HOST = "0.0.0.0"
+PORT = 8000
+'''
+⸻
+
+3.2 File Browser
+
+ブラウザからBASE_DIR以下を閲覧できる。
+
+例えば、
+'''
+BASE_DIR
+├── documents
+│   ├── test.txt
+│   └── sample.pdf
+├── images
+│   └── image.png
+├── projects
+│   └── project-a
+└── README.md
+'''
+ブラウザでは、
+'''
+File Browser
+/works/data/spec
+📁 documents
+📁 images
+📁 projects
+📄 README.md
+'''
+のように表示する。
+
+⸻
+
+4. ディレクトリ構成
+
+ここではわかりやすく基本的な機能を例にする
+
+'''
+file-browser/
+├── app.py
+├── config.py
+│
+├── routes/
+│   ├── files.py
+│   └── download.py
+│
+├── templates/
+│   └── index.html
+│
+└── static/
+    └── style.css
+'''
+役割を分離する
+
+app.py
+  ↓
+アプリケーション起動
+config.py
+  ↓
+設定値
+routes/files.py
+  ↓
+ファイル・ディレクトリ一覧
+routes/download.py
+  ↓
+ファイルダウンロード
+templates/index.html
+  ↓
+画面
+static/style.css
+  ↓
+デザイン
+
+⸻
+
+5. 各ファイルの責務
+
+app.py
+
+アプリケーションのエントリーポイント
+
+担当：
+
+* Flaskアプリ生成
+* Blueprint登録
+* Server起動
+
+イメージ：
+
+app.py
+ │
+ ├── config.py読み込み
+ │
+ ├── files.py読み込み
+ │
+ ├── download.py読み込み
+ │
+ └── Flask Server起動
+
+⸻
+
+config.py
+
+アプリケーション設定を管理する
+
+最低限：
+
+BASE_DIR = "/works/data/spec"
+HOST = "0.0.0.0"
+PORT = 8000
+
+実装：
+
+DEBUG
+MAX_UPLOAD_SIZE
+ALLOWED_EXTENSIONS
+AUTH_ENABLED
+
+⸻
+
+6. routes/files.py
+
+ファイルブラウズ機能を担当
+
+BASE_DIR = "/works/data/spec"
+
+例：
+
+/
+↓
+BASE_DIR
+
+
+/documents
+↓
+BASE_DIR/documents
+
+
+/documents/project
+↓
+BASE_DIR/documents/project
+
+
+※ URLとファイルシステムを対応させる
+
+URL
+ ↓
+/documents/project
+ ↓
+BASE_DIR
+ ↓
+/works/data/spec/documents/project
+
+⸻
+
+7. routes/download.py
+
+ファイルのダウンロードを担当
+
+例:
+
+README.pdf
+
+をクリック
+
+GET /download/README.pdf
+
+リクエスト処理
+
+サーバーからブラウザへファイルを送信
+
+⸻
+
+8. templates/index.html
+
+ブラウザに表示するHTML
+
+最低限：
+
+File Browser
+Current Path
+'''
+/works/data/spec/projects
+[ Parent Directory ]
+📁 project-a
+📁 project-b
+📄 README.md
+📄 requirements.txt
+'''
+
+画面構成は、CLI のようにシンプルだか、直感的に操作しやすいデザインに
+
+⸻
+
+9. static/style.css
+
+HTMLの見た目を担当
+
+シンプルなUI
+
+例:
+'''
+┌─────────────────────────────────────┐
+│ File Browser                         │
+├─────────────────────────────────────┤
+│ Path: /projects/project-a            │
+├─────────────────────────────────────┤
+│                                     │
+│ 📁 src                              │
+│ 📁 tests                            │
+│ 📄 README.md                        │
+│ 📄 requirements.txt                 │
+│                                     │
+└─────────────────────────────────────┘
+'''
+スマートフォンからアクセスすることも考えて、レスポンシブ対応にしておくとよい
+
+⸻
+
+10. URL設計
+
+URL	機能
+/	ルートディレクトリ
+/<path>	ディレクトリ閲覧
+/download/<path>	ファイルダウンロード
+
+例：
+'''
+http://192.168.0.10:8000/
+↓
+/works/data/spec/
+
+
+http://192.168.0.10:8000/projects
+↓
+
+/works/data/spec/projects/
+
+⸻
+
+11. セキュリティ仕様
+
+ここは重要です
+
+指定した BASE_DIR より上のディレクトリにはアクセスできないようにする
+
+例えば、
+
+BASE_DIR = /works/data/spec
+
+/works/data/spec/projects
+↓
+はアクセス可能
+
+/works/data
+/works
+/etc
+/root
+
+などにはアクセスできないようにする
+
+特に
+
+../
+
+を利用したPath Traversal攻撃を防止する
+
+例：
+
+/download/../../etc/passwd
+
+のようなリクエストを拒否
+
+これはこのシステムの必須仕様にします
+
+⸻
+
+12. シンボリックリンク
+
+安全性を優先
+
+BASE_DIR外を指しているSymbolic Linkはアクセス禁止
+
+例：
+
+BASE_DIR/
+└── secret -> /etc/
+
+のようなリンクがあった場合
+
+/etc/
+
+↑にはアクセスできないようにする
+
+⸻
+
+13. ファイル表示仕様
+
+以下の扱いにする
+
+Directory
+
+クリックするとディレクトリ内部へ移動
+
+📁 documents
+
+Text File
+
+ブラウザ内表示に対応可能
+
+📄 README.md
+
+Binary File
+
+基本的にはダウンロード
+
+📄 sample.pdf
+
+⸻
+
+14. 機能
+
+[必須]
+✓ Server起動
+✓ BASE_DIR設定
+✓ ディレクトリ一覧
+✓ フォルダ移動
+✓ 親ディレクトリへの移動
+✓ ファイル一覧
+✓ ファイルダウンロード
+✓ Path Traversal対策
+✓ BASE_DIR外へのアクセス禁止
+✓ レスポンシブUI
+
+実装：
+
+ログイン
+ユーザー管理
+ファイルアップロード
+ファイル削除
+ファイル編集
+ファイル検索
+ファイル圧縮
+HTTPS
+
+⸻
+
+15. 拡張
+
+
+File Browser
+│
+├── Browse
+│
+├── Download
+│
+├── Upload
+│
+├── Delete
+│
+├── Rename
+│
+├── Create Directory
+│
+├── Search
+│
+├── Preview
+│   ├── Text
+│   ├── Image
+│   ├── PDF
+│   └── Video
+│
+├── Authentication
+│
+└── API
+
+最終的な構成
+'''
+             Browser
+                │
+                ▼
+        ┌───────────────┐
+        │ Flask Server  │
+        └───────┬───────┘
+                │
+       ┌────────┼────────┐
+       ▼        ▼        ▼
+    Browse   Download   API
+       │        │        │
+       └────────┼────────┘
+                ▼
+             BASE_DIR
+'''
+
+「File Management System」
+
+⸻
+
+1. 完成系の全体Architecture
+
+最終的には、次のようなLayer構造を想定します
+'''
+                         Web Browser
+                              │
+                              │ HTTP / HTTPS
+                              ▼
+                    ┌──────────────────┐
+                    │   Web Frontend   │
+                    │ HTML / CSS / JS  │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │   Flask / API    │
+                    │   Application    │
+                    └────────┬─────────┘
+                             │
+          ┌──────────────────┼──────────────────┐
+          │                  │                  │
+          ▼                  ▼                  ▼
+    ┌───────────┐      ┌───────────┐     ┌───────────┐
+    │ File API  │      │ Auth API  │     │ Search API│
+    └─────┬─────┘      └───────────┘     └─────┬─────┘
+          │                                     │
+          ▼                                     ▼
+    ┌───────────┐                        ┌─────────────┐
+    │ File      │                        │ Search      │
+    │ Service   │                        │ Service     │
+    └─────┬─────┘                        └─────────────┘
+          │
+          ▼
+    ┌───────────────┐
+    │ Security      │
+    │ / Permission  │
+    └───────┬───────┘
+            │
+            ▼
+       ┌───────────┐
+       │ Filesystem│
+       └───────────┘
+'''
+重要なこと
+
+Routeから直接Filesystemを操作しない
+
+
+例：
+'''
+routes/files.py
+
+os.listdir(...)
+
+を大量に書くのではなく
+
+Route
+ ↓
+Service
+ ↓
+Security
+ ↓
+Filesystem
+'''
+と分離します
+
+※ 完成系Architectureの重要ポイント
+
+⸻
+
+2. 完成系Directory Structure
+'''
+file-browser/
+│
+├── app.py
+├── config.py
+├── requirements.txt
+├── README.md
+├── .env
+├── .gitignore
+│
+├── routes/
+│   ├── files.py
+│   ├── download.py
+│   ├── upload.py
+│   ├── delete.py
+│   ├── rename.py
+│   ├── directory.py
+│   ├── search.py
+│   ├── preview.py
+│   ├── auth.py
+│   └── api.py
+│
+├── services/
+│   ├── file_service.py
+│   ├── directory_service.py
+│   ├── upload_service.py
+│   ├── search_service.py
+│   └── preview_service.py
+│
+├── security/
+│   ├── path_security.py
+│   ├── auth.py
+│   └── permissions.py
+│
+├── models/
+│   ├── file.py
+│   ├── user.py
+│   └── permission.py
+│
+├── utils/
+│   ├── file_utils.py
+│   ├── size_utils.py
+│   └── mime_utils.py
+│
+├── templates/
+│   ├── index.html
+│   ├── login.html
+│   ├── preview.html
+│   └── error.html
+│
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   │
+│   └── js/
+│       └── app.js
+│
+├── tests/
+│   ├── test_files.py
+│   ├── test_download.py
+│   ├── test_upload.py
+│   ├── test_security.py
+│   └── test_auth.py
+│
+└── logs/
+    └── .gitkeep
+'''
+
+⸻
+
+3. ArchitectureのLayer
+
+このシステムでは、主に6つのLayerに分けます
+'''
+Presentation Layer
+        ↓
+Routing Layer
+        ↓
+Service Layer
+        ↓
+Security Layer
+        ↓
+Data / Filesystem Layer
+        ＋
+Infrastructure / Logging
+'''
+それぞれ役割を固定
+
+⸻
+
+4. Presentation Layer
+
+担当：
+
+templates/
+static/
+
+ユーザーが見る画面
+
+例：
+'''
+┌─────────────────────────────────────────┐
+│ File Browser                             │
+├─────────────────────────────────────────┤
+│ /works/data/ spec/projects    │
+├─────────────────────────────────────────┤
+│                                         │
+│ 📁 documents                            │
+│ 📁 images                               │
+│ 📁 projects                             │
+│                                         │
+│ 📄 README.md                            │
+│ 📄 test.py                              │
+│                                         │
+└─────────────────────────────────────────┘
+'''
+'''
+[Upload]
+[New Folder]
+[Search]
+[Sort ▼]
+Name | Size | Modified | Type
+'''
+など
+
+⸻
+
+5. Routing Layer
+
+routes/
+
+ここはHTTP Requestを受け取る入口
+
+例：
+'''
+GET /files
+GET /files/<path>
+GET /download/<path>
+POST /upload
+DELETE /files/<path>
+POST /rename
+POST /directory/create
+GET /search
+GET /preview/<path>
+POST /login
+POST /logout
+'''
+など
+
+Routeの仕事
+'''
+Requestを受け取る
+        ↓
+入力値を確認
+        ↓
+Serviceを呼ぶ
+        ↓
+Responseを返す
+'''
+
+Route自身がFilesystemを直接操作することは避る
+
+⸻
+
+6. Service Layer
+
+Architectureの中心
+
+services/
+
+例：
+
+file_service.py
+
+'''
+ファイル情報取得
+ファイル存在確認
+ファイル種類判定
+ファイル削除
+ファイル移動
+ファイル名前変更
+'''
+などを担当
+
+directory_service.py
+'''
+ディレクトリ一覧
+ディレクトリ作成
+親ディレクトリ取得
+'''
+などを担当
+
+'''
+Route
+ ↓
+Service
+ ↓
+Filesystem
+'''
+とする
+
+Web画面以外からもServiceを利用
+
+例：
+'''
+Web UI
+   ↓
+Service
+REST API
+   ↓
+Service
+CLI
+   ↓
+Service
+'''
+
+
+⸻
+
+7. Security Layer
+
+security/
+
+ここではFilesystemへのアクセスを管理
+
+※ 特に重要
+
+Path Traversal Protection
+
+
+例：
+
+../
+../../
+/etc/passwd
+
+などを使ってBASE_DIRの外へ出ようとするアクセスを拒否！
+
+Architecture
+'''
+Request
+   ↓
+Path Security
+   ↓
+「BASE_DIR内か？」
+   ↓
+YES → Service
+NO  → Reject
+'''
+とする
+
+⸻
+
+8. Authentication
+
+Login機能
+'''
+Browser
+   ↓
+/login
+   ↓
+Username / Password
+   ↓
+Authentication
+   ↓
+Session
+   ↓
+File Browser
+'''
+例：
+'''
+User
+ ├── admin
+ └── user
+'''
+
+ただし、ここで重要なのは、
+
+LinuxのFilesystem PermissionとWeb ApplicationのPermissionを混同しないこと
+
+例：
+
+Linux Permission
+        +
+Application Permission
+
+の2段階になります
+
+⸻
+
+9. Permission System
+
+ユーザーごとにアクセス可能なディレクトリを制限できます
+
+例：
+'''
+/works/data/spec
+│
+├── public/
+│
+├── admin/
+│
+└── users/
+    ├── user-a/
+    └── user-b/
+
+○ ユーザーA
+
+public
+users/user-a
+
+だけアクセス可能
+
+○ 管理者
+
+全部
+
+という構成
+
+さらに
+'''
+read
+write
+delete
+upload
+download
+'''
+などのPermissionを分離
+
+⸻
+
+10. File Operations
+
+以下をサポート
+'''
+Browse
+Download
+Upload
+Delete
+Rename
+Move
+Copy
+Create Directory
+'''
+さらに
+'''
+Zip
+Unzip
+'''
+
+⸻
+
+11. File Preview
+
+ファイルをダウンロードするだけでなく
+
+ブラウザ内でPreview
+
+例：
+'''
+.txt
+.md
+.py
+.json
+.yaml
+.html
+.css
+.js
+'''
+など
+
+例：
+'''
+README.md
+'''
+をクリックする
+'''
+┌─────────────────────────────┐
+│ README.md                   │
+├─────────────────────────────┤
+│ # Project                   │
+│                             │
+│ This is a test project.     │
+│                             │
+└─────────────────────────────┘
+'''
+
+画像なら、
+'''
+.jpg
+.png
+.webp
+'''
+をブラウザに表示
+
+PDFもPreview可能
+
+⸻
+
+12. Search System
+
+検索機能
+
+例：
+'''
+Search: analyzer.py
+'''
+↓
+'''
+/works/data/projects/analyzer.py
+/works/data/tools/analyzer.py
+/works/data/test/analyzer.py
+'''
+など
+
+検索対象：
+'''
+File Name
+Directory Name
+Extension
+'''
+全文検索も追加
+
+⸻
+
+13. Sorting / Filtering
+
+ファイル一覧
+'''
+Name
+Size
+Modified Date
+Type
+'''
+Sort 機能
+
+例：
+'''
+Name ↑
+Name ↓
+Size ↑
+Size ↓
+Modified ↑
+Modified ↓
+'''
+など
+
+⸻
+
+14. API Layer
+
+Web UIとは別にREST APIを実装
+
+例:
+'''
+GET    /api/files
+GET    /api/files/<path>
+GET    /api/download/<path>
+POST   /api/upload
+DELETE /api/files/<path>
+POST   /api/search
+'''
+これにより
+'''
+Browser
+     │
+     ▼
+   REST API
+     │
+     ▼
+File Service
+'''
+
+例：
+
+自宅AI Serverから
+'''
+AI
+ ↓
+File Browser API
+ ↓
+ファイル取得
+ ↓
+解析
+'''
+
+⸻
+
+15. Logging
+
+操作Log
+
+例：
+'''
+2026-08-11 06:20:01
+user=admin
+action=download
+file=/data/test.pdf
+result=success
+'''
+
+
+記録する操作：
+'''
+LOGIN
+LOGOUT
+DOWNLOAD
+UPLOAD
+DELETE
+RENAME
+MOVE
+COPY
+CREATE_DIRECTORY
+SEARCH
+'''
+など
+
+ただしPasswordなどの機密情報はLogに保存しません！
+
+⸻
+
+16. Error Handling
+
+エラー画面
+
+例：
+'''
+404 Not Found
+403 Forbidden
+401 Unauthorized
+413 File Too Large
+500 Internal Server Error
+'''
+など
+
+ユーザー向けのエラーとServer Logを分離
+
+⸻
+
+17. Configuration Architecture
+
+config.pyだけにすべてを書かない
+
+環境変数を採用
+
+例：
+'''
+.env
+FILE_BROWSER_BASE_DIR=/works/data/spec
+FILE_BROWSER_HOST=0.0.0.0
+FILE_BROWSER_PORT=8000
+FILE_BROWSER_DEBUG=false
+'''
+'''
+config.py
+    ↓
+Environment Variable
+    ↓
+Application
+'''
+
+PasswordやSecret KeyなどをGitにCommitしないため
+
+⸻
+
+18. Database
+
+SQLite 設計
+
+保存するもの：
+'''
+User
+Permission
+Session
+Operation Log
+Settings
+'''
+FilesystemそのものはDatabaseに保存しない
+
+'''
+SQLite
+ ↓
+Application Metadata
+Filesystem
+ ↓
+実際のファイル
+'''
+
+このように分離する
+
+⸻
+
+19. Database Architecture
+
+例：
+
+SQLite
+│
+├── users
+│
+├── permissions
+│
+├── sessions
+│
+└── audit_logs
+
+
+ファイルそのものは
+'''
+/works/data/spec
+'''
+
+⸻
+
+20. Deployment Architecture
+'''
+Linux
+ │
+ └── Python
+      │
+      └── Flask
+           │
+           └── :8000
+'''
+↓
+'''
+Browser
+   │
+   ▼
+Nginx
+   │
+   ▼
+Gunicorn
+   │
+   ▼
+Flask
+   │
+   ├── SQLite
+   │
+   └── Filesystem
+'''
+
+
+LAN内だけならNginxなし運用
+
+Tailscale 等で、外部からなら、、、
+
+⸻
+
+21. Docker化
+
+Docker 運用例
+'''
+Docker
+│
+└── file-browser
+    │
+    ├── Flask
+    ├── Gunicorn
+    └── Application
+'''
+FilesystemはVolume
+'''
+Host
+/works/data/spec/
+       │
+       ▼
+Container
+/data
+'''
+
+OMVなどの環境にも展開しやすい
+
+⸻
+
+22. 全体像
+'''
+
+                         Browser
+                            │
+                       HTTP/HTTPS
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │    Nginx     │
+                    │ Reverse Proxy│
+                    └──────┬───────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │   Gunicorn   │
+                    └──────┬───────┘
+                           │
+                           ▼
+              ┌────────────────────────┐
+              │       Flask App        │
+              │                        │
+              │  ┌──────────────────┐  │
+              │  │ Routes / API     │  │
+              │  └────────┬─────────┘  │
+              │           ▼            │
+              │  ┌──────────────────┐  │
+              │  │ Services         │  │
+              │  └────────┬─────────┘  │
+              │           ▼            │
+              │  ┌──────────────────┐  │
+              │  │ Security         │  │
+              │  └──────┬─────┬─────┘  │
+              └──────────┼─────┼────────┘
+                         │     │
+                 ┌───────┘     └────────┐
+                 ▼                       ▼
+           ┌──────────┐           ┌──────────┐
+           │ SQLite   │           │Filesystem│
+           │ Database │           │          │
+           └──────────┘           └──────────┘
+
+⸻
+'''
