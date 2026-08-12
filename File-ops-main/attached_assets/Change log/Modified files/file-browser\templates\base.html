@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}File Browser{% endblock %}</title>
+    <script>
+      (function () {
+        var saved = localStorage.getItem('fb-theme');
+        var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="{{ url_for('files.browse', virtual_path='') }}">
+          <span class="brand-mark" aria-hidden="true">FB</span>
+          <span>File Browser</span>
+        </a>
+        <div class="header-actions">
+          <span class="status-pill"><span class="status-dot"></span> LAN read-only</span>
+          <button type="button" class="theme-toggle" id="themeToggle" aria-label="表示テーマを切り替え" title="ダーク/ライト切り替え">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+    <script>
+      document.getElementById('themeToggle').addEventListener('click', function () {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('fb-theme', next);
+      });
+    </script>
+  </body>
+</html>
