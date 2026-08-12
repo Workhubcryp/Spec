@@ -1,20 +1,3 @@
-{% extends "base.html" %}
-{% block title %}{{ preview.name }} · File Browser{% endblock %}
-{% block content %}
-<div class="preview-heading">
-  <div>
-    <p class="eyebrow">{{ 'MARKDOWN PREVIEW' if preview.is_markdown else 'TEXT PREVIEW' }}</p>
-    <h1>{{ preview.name }}</h1>
-    <p class="muted">{{ preview.relative_path }}</p>
-  </div>
-  <div class="preview-actions">
-    <a class="button button-secondary" href="{{ url_for('files.browse', virtual_path=preview.relative_path.rsplit('/', 1)[0] if '/' in preview.relative_path else '') }}">← Back</a>
-    <a class="button button-primary" href="{{ url_for('files.download', virtual_path=preview.relative_path) }}">Download</a>
-  </div>
-</div>
-{% if preview.is_markdown %}
-<div class="markdown-body">{{ preview.rendered_html | safe }}</div>
-{% else %}
-<pre class="code-preview"><code>{{ preview.content }}</code></pre>
-{% endif %}
-{% endblock %}
+Flask>=3.1,<4
+pytest>=9,<10
+markdown>=3.7,<4
