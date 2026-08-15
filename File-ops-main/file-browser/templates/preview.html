@@ -3,7 +3,7 @@
 {% block content %}
 <div class="preview-heading">
   <div>
-    <p class="eyebrow">TEXT PREVIEW</p>
+    <p class="eyebrow">{{ 'MARKDOWN PREVIEW' if preview.is_markdown else 'TEXT PREVIEW' }}</p>
     <h1>{{ preview.name }}</h1>
     <p class="muted">{{ preview.relative_path }}</p>
   </div>
@@ -12,5 +12,9 @@
     <a class="button button-primary" href="{{ url_for('files.download', virtual_path=preview.relative_path) }}">Download</a>
   </div>
 </div>
+{% if preview.is_markdown %}
+<div class="markdown-body">{{ preview.rendered_html | safe }}</div>
+{% else %}
 <pre class="code-preview"><code>{{ preview.content }}</code></pre>
+{% endif %}
 {% endblock %}
