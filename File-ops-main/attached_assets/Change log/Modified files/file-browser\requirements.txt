@@ -1,3 +1,0 @@
-Flask>=3.1,<4
-pytest>=9,<10
-markdown>=3.7,<4
